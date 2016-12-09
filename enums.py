@@ -69,6 +69,7 @@ class DataQualifierType(Enum):
 class FlowDirectionType(Enum):
     notApplicable = 0
     forward = 1
+    net = 4
     reverse = 19
         
 class KindType(Enum):
@@ -119,6 +120,7 @@ class QualityOfReading(Enum):
     other = 16
     validated = 17
     verified = 18
+    revenueQuality = 19
         
 class ServiceKind(Enum):
     electricity = 0
