@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 ns = {'atom': 'http://www.w3.org/2005/Atom',
-      'espi': 'http://naesb.org/espi'}
+      'espi': 'http://naesb.org/espi',
+      'espiCustomer': 'http://naesb.org/espi/customer'}
 
 def getEntity(source, target, accessor=None, multiple=False):
     """Extracts the named entity from the source XML tree.  `accessor` is a

@@ -2,6 +2,7 @@
 
 import bisect
 import functools
+import re
 
 from utils import *
 from enums import *
@@ -31,6 +32,8 @@ class UsagePoint(Resource):
                                          lambda e: ServiceKind(int(e.text)))
         
         self.meterReadings = set()
+        (self.subscriptionId,self.usagePointId) = self.parseLink()
+
         for mr in meterReadings:
             if self.isParentOf(mr):
                 self.addMeterReading(mr)
@@ -40,6 +43,13 @@ class UsagePoint(Resource):
         self.meterReadings.add(meterReading)
         meterReading.usagePoint = self
 
+    def parseLink(self):
+        searchPattern = re.compile('resource/Subscription/(\d+)/UsagePoint/(\d+)')
+        m = searchPattern.search(self.link_self)
+        if m:
+            return (m.group(1),m.group(2))
+        else:
+            return (None,None)
         
 class MeterReading(Resource):
     def __init__(self, entry, usagePoints=[], readingTypes=[], intervalBlocks=[]):
@@ -133,3 +143,125 @@ class IntervalBlock(Resource):
     def __lt__(self, other):
         return self.interval < other.interval
     
+
+class Customer(Resource):
+    def __init__(self,entry):
+        super(Customer,self).__init__(entry)
+        obj = entry.find('./atom:content/espiCustomer:Customer',ns)
+        self.name = getEntity(obj,'espiCustomer:name',lambda e: e.text)
+        self.retailCustomerId = self.parseLink()
+        self.customerAccounts = {}
+
+    def parseLink(self):
+        retailCustomerRe = re.compile('resource/RetailCustomer/(\d+)')
+        m = retailCustomerRe.search(self.link_self)
+        if m:
+            return m.group(1)
+        return None
+
+    def addCustomerAccount(self,ca):
+        assert self.isParentOf(ca)
+        if ca.customerAccountId not in self.customerAccounts:
+            self.customerAccounts[ca.customerAccountId] = ca
+        ca.customer = self
+
+class CustomerAccount(Resource):
+    def __init__(self,entry,customers={}):
+        super(CustomerAccount,self).__init__(entry)
+
+        obj = entry.find('./atom:content/espiCustomer:CustomerAccount',ns)
+        self.name = getEntity(obj,'espiCustomer:name',lambda e: e.text)
+        self.customer = None
+        self.customerAgreements = {}
+
+        retailCustomerId,customerAccountId = self.parseLink()
+        self.customerAccountId = customerAccountId
+
+        p = customers.get(retailCustomerId)
+        if not p:
+            for i in customers.values():
+                if i.isParentOf(self):
+                    p = i
+        if p:
+             p.addCustomerAccount(self)
+
+    def parseLink(self):
+        customerAccountRe = re.compile('resource/RetailCustomer/(\d+)/Customer/[^/]+/CustomerAccount/(\d+)')
+        m = customerAccountRe.search(self.link_self)
+        if m:
+            return (m.group(1),m.group(2))
+        return (None,None)
+
+    def addCustomerAgreement(self,ca):
+        assert self.isParentOf(ca)
+        if ca.customerAgreementId not in self.customerAgreements:
+            self.customerAgreements[ca.customerAgreementId] = ca
+        ca.customerAccount = self
+
+class CustomerAgreement(Resource):
+    def __init__(self,entry,customerAccounts={}):
+        super(CustomerAgreement,self).__init__(entry)
+        obj = entry.find('./atom:content/espiCustomer:CustomerAgreement',ns)
+        self.name = getEntity(obj,'espiCustomer:name',lambda e: e.text)
+        self.signDate = getEntity(obj,'espiCustomer:signDate',lambda e: e.text)
+        self.customerAccount = None
+        self.serviceLocation = None
+
+        customerAccountId,customerAgreementId = self.parseLink()
+        self.customerAgreementId = customerAgreementId
+
+        ca = customerAccounts.get(customerAccountId)
+        if not ca:
+            for i in customerAccounts.values():
+                if i.isParentOf(self):
+                    ca = i
+        if ca:
+              ca.addCustomerAgreement(self)
+
+    def parseLink(self):
+        customerAgreementRe = re.compile('resource/RetailCustomer/\d+/Customer/[^/]+/CustomerAccount/(\d+)/CustomerAgreement/(\d+)')
+        m = customerAgreementRe.search(self.link_self)
+        if m:
+            return (m.group(1),m.group(2))
+        return (None,None)
+
+    def addServiceLocation(self,serviceLocation):
+        if not self.serviceLocation:
+            self.serviceLocation = serviceLocation
+        serviceLocation.customerAgreement = self
+
+class ServiceLocation(Resource):
+    def __init__(self,entry,customerAgreements={}):
+        super(ServiceLocation,self).__init__(entry)
+        obj = entry.find('./atom:content/espiCustomer:ServiceLocation/espiCustomer:mainAddress',ns)
+        self.address = getEntity(obj,'espiCustomer:streetDetail/espiCustomer:addressGeneral',
+                                 lambda e: e.text)
+        self.zipCode = getEntity(obj,'espiCustomer:townDetail/espiCustomer:code',
+                                 lambda e: e.text.strip())
+        self.city = getEntity(obj,'espiCustomer:townDetail/espiCustomer:name',
+                              lambda e: e.text)
+        self.state = getEntity(obj,'espiCustomer:townDetail/espiCustomer:stateOrProvince',
+                               lambda e: e.text)
+        self.customerAgreement = None
+
+        customerAgreementId,self.serviceLocationId = self.parseLink()
+        ca = customerAgreements.get(customerAgreementId)
+        if not ca:
+            for i in customerAgreements.values():
+                if i.isParentOf(self):
+                    ca = i
+        if ca:
+            ca.addServiceLocation(self)
+
+    def parseLink(self):
+        serviceLocationRe = re.compile('resource/RetailCustomer/\d+/Customer/[^\/]+/CustomerAccount/\d+/CustomerAgreement/(\d+)/ServiceLocation/([^\/]+)')
+        m = serviceLocationRe.search(self.link_self)
+        if m:
+            return (m.group(1),m.group(2))
+        return (None,None)
+
+    def fullAddress(self):
+        if self.address:
+            return "%s, %s %s %s"%(self.address,self.city,self.state,self.zipCode)
+        else:
+            return ""
