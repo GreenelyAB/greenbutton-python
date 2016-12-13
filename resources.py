@@ -34,6 +34,8 @@ class UsagePoint(Resource):
         self.meterReadings = set()
         (self.subscriptionId,self.usagePointId) = self.parseLink()
 
+        self.usageSummaries = {}
+
         for mr in meterReadings:
             if self.isParentOf(mr):
                 self.addMeterReading(mr)
@@ -42,6 +44,12 @@ class UsagePoint(Resource):
         assert self.isParentOf(meterReading)
         self.meterReadings.add(meterReading)
         meterReading.usagePoint = self
+
+    def addUsageSummary(self, usageSummary):
+        assert self.isParentOf(usageSummary)
+        if usageSummary.usageSummaryId not in self.usageSummaries:
+            self.usageSummaries[usageSummary.usageSummaryId] = usageSummary
+        usageSummary.usagePoint = self
 
     def parseLink(self):
         searchPattern = re.compile('resource/Subscription/(\d+)/UsagePoint/(\d+)')
@@ -52,7 +60,7 @@ class UsagePoint(Resource):
             return (None,None)
         
 class MeterReading(Resource):
-    def __init__(self, entry, usagePoints=[], readingTypes=[], intervalBlocks=[]):
+    def __init__(self, entry, usagePoints=[], readingTypes={}, intervalBlocks=[]):
         super(MeterReading, self).__init__(entry)
 
         self.usagePoint = None
@@ -61,7 +69,8 @@ class MeterReading(Resource):
         for up in usagePoints:
             if up.isParentOf(self):
                 up.addMeterReading(self)
-        for rt in readingTypes:
+        for rtId in readingTypes:
+            rt = readingTypes[rtId]
             if self.isParentOf(rt):
                 self.setReadingType(rt)
         for ib in intervalBlocks:
@@ -115,11 +124,53 @@ class ReadingType(Resource):
                                        lambda e: TimeAttributeType(int(e.text)))
         self.tou = getEntity(obj, 'espi:tou', lambda e: TOUType(int(e.text)))
         self.uom = getEntity(obj, 'espi:uom', lambda e: UomType(int(e.text)))
+        self.readingTypeId = self.parseLink()
 
         for mr in meterReadings:
             if mr.isParentOf(self):
                 mr.setReadingType(self)
 
+    def parseLink(self):
+        readingTypeRe = re.compile('resource/ReadingType/([^\/]+)')
+        m = readingTypeRe.search(self.link_self)
+        if m:
+            return m.group(1)
+        return None
+
+class UsageSummary(Resource):
+    def __init__(self,entry,usagePoints=[],readingTypes={}):
+        super(UsageSummary,self).__init__(entry)
+        self.usagePoint = None
+        obj = entry.find('./atom:content/espi:UsageSummary',ns)
+        self.billingPeriod = getEntity(obj,'espi:billingPeriod', lambda e: DateTimeInterval(e))
+        self.billLastPeriod = getEntity(obj,'espi:billLastPeriod', lambda e: int(e.text)/100000.0)
+        self.currency = getEntity(obj,'espi:currency',lambda e: CurrencyCode(int(e.text)))
+        self.overallConsumptionLastPeriod = getEntity(obj,'espi:overallConsumptionLastPeriod',
+                lambda e: OverallConsumptionLastPeriod(e,self,readingTypes))
+        self.costAdditionalDetailLastPeriods =\
+            [CostAdditionalDetailLastPeriod(cadlp,self) \
+                 for cadlp in obj.findall('espi:costAdditionalDetailLastPeriod',ns)]
+        _statusTimeStamp = getEntity(obj,'espi:statusTimeStamp', lambda e: e.text)
+        if len(_statusTimeStamp)>10:
+            # Timestamp inclues miliseconds
+            _statusTimeStamp = _statusTimeStamp[:-3]
+        self.statusTimeStamp = datetime.datetime.fromtimestamp(int(_statusTimeStamp))
+        self.commodity = getEntity(obj, 'espi:commodity',
+                                   lambda e: CommodityType(int(e.text)))
+        self.tariffProfile = getEntity(obj,'espi:tariffProfile',lambda e: e.text)
+        self.readCycle = getEntity(obj,'espi:readCycle',lambda e: e.text)
+        _,self.usageSummaryId = self.parseLink()
+
+        for u in usagePoints:
+            if u.isParentOf(self):
+                u.addUsageSummary(self)
+
+    def parseLink(self):
+        usageSummaryRe = re.compile('resource/Subscription/\d+/UsagePoint/(\d+)/UsageSummary/([^\/]+)')
+        m = usageSummaryRe.search(self.link_self)
+        if m:
+            return (m.group(1),m.group(2))
+        return None,None
 
 @functools.total_ordering
 class IntervalBlock(Resource):

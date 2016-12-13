@@ -147,6 +147,9 @@ class TimeAttributeType(Enum):
     forTheSpecifiedPeriod = 32
     daily30MinuteFixedBlock = 79
 
+class ItemKind(Enum):
+    energyUsageFee = 3
+
 class UomType(Enum):
     notApplicable = 0
     amps = 5
