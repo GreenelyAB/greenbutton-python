@@ -1,3 +1,4 @@
 *.pyc
 doc/*.png
 .pyenv
+testdata_local/*

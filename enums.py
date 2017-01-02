@@ -3,6 +3,7 @@
 
 from enum import Enum
 
+
 class AccumulationBehaviourType(Enum):
     notApplicable = 0
     bulkQuantity = 1
@@ -11,7 +12,8 @@ class AccumulationBehaviourType(Enum):
     indicating = 6
     summation = 9
     instantaneous = 12
-    
+
+
 class CommodityType(Enum):
     notApplicable = 0
     electricity = 1
@@ -23,7 +25,8 @@ class CommodityType(Enum):
     wastewater = 11
     heatingFluid = 12
     coolingFluid = 13
-        
+
+
 class ConsumptionTierType(Enum):
     notApplicable = 0
     blockTier1 = 1
@@ -42,7 +45,8 @@ class ConsumptionTierType(Enum):
     blockTier14 = 14
     blockTier15 = 15
     blockTier16 = 16
-        
+
+
 class CurrencyCode(Enum):
     na = 0
     aus = 36
@@ -58,20 +62,23 @@ class CurrencyCode(Enum):
             return '€'
         else:
             return '¤'
-        
+
+
 class DataQualifierType(Enum):
     notApplicable = 0
     average = 2
     maximum = 8
     minimum = 9
     normal = 12
-        
+
+
 class FlowDirectionType(Enum):
     notApplicable = 0
     forward = 1
     net = 4
     reverse = 19
-        
+
+
 class KindType(Enum):
     notApplicable = 0
     currency = 3
@@ -88,7 +95,8 @@ class KindType(Enum):
     voltageAngle = 55
     distortionPowerFactor = 64
     volumetricFlow = 155
-        
+
+
 class PhaseCode(Enum):
     notApplicable = 0
     c = 32
@@ -105,7 +113,8 @@ class PhaseCode(Enum):
     s1n = 513
     s1s2 = 768
     s1s2n = 769
-        
+
+
 class QualityOfReading(Enum):
     valid = 0
     manuallyEdited = 7
@@ -121,7 +130,8 @@ class QualityOfReading(Enum):
     validated = 17
     verified = 18
     revenueQuality = 19
-        
+
+
 class ServiceKind(Enum):
     electricity = 0
     naturalGas = 1
@@ -131,6 +141,7 @@ class ServiceKind(Enum):
     cold = 6
     communication = 7
     time = 8
+
 
 class TimeAttributeType(Enum):
     notApplicable = 0
@@ -147,8 +158,10 @@ class TimeAttributeType(Enum):
     forTheSpecifiedPeriod = 32
     daily30MinuteFixedBlock = 79
 
+
 class ItemKind(Enum):
     energyUsageFee = 3
+
 
 class UomType(Enum):
     notApplicable = 0
@@ -181,6 +194,7 @@ class UomType(Enum):
     gaugePascals = 140
     absolutePascals = 155
     therms = 169
+
 
 UOM_SYMBOLS = {
     UomType.notApplicable: '',

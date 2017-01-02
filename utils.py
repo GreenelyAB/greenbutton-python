@@ -1,29 +1,37 @@
 #!/usr/bin/python
 
-ns = {'atom': 'http://www.w3.org/2005/Atom',
-      'espi': 'http://naesb.org/espi',
-      'espiCustomer': 'http://naesb.org/espi/customer'}
+ESPI_NAMESPACE = {
+    'atom': 'http://www.w3.org/2005/Atom',
+    'espi': 'http://naesb.org/espi',
+    'espiCustomer': 'http://naesb.org/espi/customer'
+}
+
 
 def getEntity(source, target, accessor=None, multiple=False):
-    """Extracts the named entity from the source XML tree.  `accessor` is a
+    """ Extracts the named entity from the source XML tree.  `accessor` is a
     function of one argyment; if provided and the target entity is found, the
     target will be passed into `accessor` and its result will be returned.  If
     `multiple` is true, the result will be all entities that match (i.e. the
-    function will use `finall` instead of `find`)."""
+    function will use `finall` instead of `find`).
+    """
     if multiple:
-        es = source.findall(target, ns)
+        es = source.findall(target, ESPI_NAMESPACE)
         if accessor:
-            return [ accessor(e) for e in es ]
+            return [accessor(e) for e in es]
         else:
             return es
     else:
-        e = source.find(target, ns)
+        e = source.find(target, ESPI_NAMESPACE)
         if e is not None and accessor is not None:
             return accessor(e)
         else:
             return e
 
-def getLink(source, relation, multiple=False):
-    """Shorthand for pulling a link with the given "rel" attribute from the source."""
-    return getEntity(source, './atom:link[@rel="%s"]' % relation, lambda e: e.attrib['href'], multiple)
 
+def getLink(source, relation, multiple=False):
+    """ Shorthand for pulling a link with the given "rel" attribute from the
+    source.
+    """
+    return getEntity(
+        source, './atom:link[@rel="%s"]' % relation,
+        lambda e: e.attrib['href'], multiple)
