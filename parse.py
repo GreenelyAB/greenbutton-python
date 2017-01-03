@@ -4,7 +4,10 @@
 import sys
 import xml.etree.ElementTree as ET
 
-from resources import *
+from resources import UsagePoint, MeterReading, ReadingType, UsageSummary, \
+    IntervalBlock, Customer, CustomerAccount, CustomerAgreement, \
+    ServiceLocation
+from utils import ESPI_NAMESPACE
 
 
 def parseUsages(filename):
@@ -12,32 +15,33 @@ def parseUsages(filename):
 
     usagePoints = []
     for entry in tree.getroot().findall(
-            'atom:entry/atom:content/espi:UsagePoint/../..', ns):
+            'atom:entry/atom:content/espi:UsagePoint/../..', ESPI_NAMESPACE):
         up = UsagePoint(entry)
         usagePoints.append(up)
 
     meterReadings = []
     for entry in tree.getroot().findall(
-            'atom:entry/atom:content/espi:MeterReading/../..', ns):
+            'atom:entry/atom:content/espi:MeterReading/../..', ESPI_NAMESPACE):
         mr = MeterReading(entry, usagePoints=usagePoints)
         meterReadings.append(mr)
 
     readingTypes = {}
     for entry in tree.getroot().findall(
-            'atom:entry/atom:content/espi:ReadingType/../..', ns):
+            'atom:entry/atom:content/espi:ReadingType/../..', ESPI_NAMESPACE):
         rt = ReadingType(entry, meterReadings=meterReadings)
         if rt.readingTypeId not in readingTypes:
             readingTypes[rt.readingTypeId] = rt
 
     intervalBlocks = []
     for entry in tree.getroot().findall(
-            'atom:entry/atom:content/espi:IntervalBlock/../..', ns):
+            'atom:entry/atom:content/espi:IntervalBlock/../..',
+            ESPI_NAMESPACE):
         ib = IntervalBlock(entry, meterReadings=meterReadings)
         intervalBlocks.append(ib)
 
     usageSummaries = {}
     for entry in tree.getroot().findall(
-            'atom:entry/atom:content/espi:UsageSummary/../..', ns):
+            'atom:entry/atom:content/espi:UsageSummary/../..', ESPI_NAMESPACE):
         us = UsageSummary(
             entry, usagePoints=usagePoints, readingTypes=readingTypes)
         if us.usageSummaryId not in usageSummaries:
@@ -51,14 +55,16 @@ def parseCustomers(filename):
 
     customers = {}
     for entry in tree.getroot().findall(
-            'atom:entry/atom:content/espiCustomer:Customer/../..', ns):
+            'atom:entry/atom:content/espiCustomer:Customer/../..',
+            ESPI_NAMESPACE):
         c = Customer(entry)
         if c.retailCustomerId not in customers:
             customers[c.retailCustomerId] = c
 
     customerAccounts = {}
     for entry in tree.getroot().findall(
-            'atom:entry/atom:content/espiCustomer:CustomerAccount/../..', ns):
+            'atom:entry/atom:content/espiCustomer:CustomerAccount/../..',
+            ESPI_NAMESPACE):
         ca = CustomerAccount(entry, customers=customers)
         if ca.customerAccountId not in customerAccounts:
             customerAccounts[ca.customerAccountId] = ca
@@ -66,14 +72,15 @@ def parseCustomers(filename):
     customerAgreements = {}
     for entry in tree.getroot().findall(
             'atom:entry/atom:content/espiCustomer:CustomerAgreement/../..',
-            ns):
+            ESPI_NAMESPACE):
         ca = CustomerAgreement(entry, customerAccounts=customerAccounts)
         if ca.customerAgreementId not in customerAgreements:
             customerAgreements[ca.customerAgreementId] = ca
 
     serviceLocations = {}
     for entry in tree.getroot().findall(
-            'atom:entry/atom:content/espiCustomer:ServiceLocation/../..', ns):
+            'atom:entry/atom:content/espiCustomer:ServiceLocation/../..',
+            ESPI_NAMESPACE):
         sl = ServiceLocation(entry, customerAgreements=customerAgreements)
         if sl.serviceLocationId not in serviceLocations:
             serviceLocations[sl.serviceLocationId] = sl
