@@ -123,6 +123,8 @@ class OverallConsumptionLastPeriod:
             lambda e: readingTypes.get(self.parseReadingTypeId(e.text)))
 
     def parseReadingTypeId(self, url):
+        # Following "resource/ReadingType/" match any string up to next slash.
+        # Example of such a string: NzI6bnVsbDpudWxsOjQ=
         readingTypeRe = re.compile('resource/ReadingType/([^\/]+)')
         m = readingTypeRe.search(url)
         if m:

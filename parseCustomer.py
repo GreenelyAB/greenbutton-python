@@ -11,7 +11,6 @@ from utils import ESPI_NAMESPACE
 
 
 def parse_feed(filename):
-    # print("Parsing " + str(filename))
     tree = ET.parse(filename)
 
     customers = {}
@@ -51,8 +50,8 @@ def parse_feed(filename):
 
 
 if __name__ == '__main__':
-    print("Python version: " + sys.version)
-    print("Python executable: " + sys.executable)
+    # print("Python version: " + sys.version)
+    # print("Python executable: " + sys.executable)
     cs = parse_feed(sys.argv[1])
     # print(str(cs))
     for c in cs.values():
